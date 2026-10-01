@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>✈️ Airplane Tracker</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #panel {
+    position: absolute; top: 12px; left: 12px; z-index: 1000;
+    background: rgba(20,24,33,.9); color: #e8edf5; padding: 10px 14px;
+    border-radius: 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  }
+  #panel h1 { margin: 0 0 4px; font-size: 15px; }
+  #status { opacity: .75; }
+  .plane-icon { font-size: 20px; line-height: 20px; text-align: center;
+                filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+  .leaflet-popup-content { font-size: 13px; line-height: 1.5; }
+  .leaflet-popup-content b { color: #1a5fb4; }
+  .silhouette { margin-top: 8px; text-align: center; }
+  .silhouette img {
+    max-width: 240px; max-height: 130px; width: 100%; height: auto;
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 4px;
+  }
+  .base-label {
+    margin-top: 4px; font-size: 12px; font-weight: 600;
+    color: #333; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <h1>✈️ Airplane Tracker</h1>
+  <div id="status">Loading…</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map, centerMarker, radiusCircle;
+const markers = {}; // icao24 -> Leaflet marker
+
+function planeIcon(track, onGround) {
+  // ✈️ emoji points up-right (~45°); rotate so nose follows heading.
+  const rot = (track || 0) - 45;
+  const color = onGround ? 'opacity:.5' : '';
+  return L.divIcon({
+    className: '',
+    html: `<div class="plane-icon" style="transform:rotate(${rot}deg);${color}">✈️</div>`,
+    iconSize: [20, 20], iconAnchor: [10, 10],
+  });
+}
+
+function popupHtml(p) {
+  const alt = p.ground ? 'on ground' : p.alt.toLocaleString() + ' ft';
+  const climb = p.vrate > 150 ? '↑ climbing'
+              : p.vrate < -150 ? '↓ descending' : '→ level';
+  // Silhouette for this plane's base model (shown when the marker is clicked).
+  const art = p.base_img
+    ? `<div class="silhouette">
+         <img src="${p.base_img}" alt="${p.base}" loading="lazy">
+         <div class="base-label">${p.base}</div>
+       </div>`
+    : (p.base && p.base !== 'Unknown'
+        ? `<div class="base-label">${p.base}</div>` : '');
+  return `<b>${p.callsign}</b> ${p.type ? '(' + p.type + ')' : ''}<br>`
+       + `${p.route ? '🛫 ' + p.route + '<br>' : ''}`
+       + `Alt: ${alt}<br>`
+       + `Speed: ${p.spd} kt &nbsp; Heading: ${p.track}°<br>`
+       + `${climb} &nbsp; · &nbsp; ${p.dist} km away`
+       + art;
+}
+
+async function refresh() {
+  const status = document.getElementById('status');
+  try {
+    const res = await fetch('/api/planes');
+    const data = await res.json();
+    if (data.error) { status.textContent = 'API error: ' + data.error; return; }
+
+    if (!map) {
+      map = L.map('map').setView(data.center, 9);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18, attribution: '© OpenStreetMap',
+      }).addTo(map);
+      centerMarker = L.marker(data.center).addTo(map).bindPopup('You are here');
+      radiusCircle = L.circle(data.center, {
+        radius: data.radius_km * 1000, color: '#1a5fb4',
+        weight: 1, fillOpacity: .04,
+      }).addTo(map);
+    }
+
+    const seen = new Set();
+    for (const p of data.planes) {
+      seen.add(p.icao24);
+      const pos = [p.lat, p.lon];
+      if (markers[p.icao24]) {
+        markers[p.icao24].setLatLng(pos).setIcon(planeIcon(p.track, p.ground));
+        markers[p.icao24].getPopup().setContent(popupHtml(p));
+      } else {
+        markers[p.icao24] = L.marker(pos, { icon: planeIcon(p.track, p.ground) })
+          .addTo(map).bindPopup(popupHtml(p));
+      }
+    }
+    // remove planes that left the area
+    for (const id in markers) {
+      if (!seen.has(id)) { map.removeLayer(markers[id]); delete markers[id]; }
+    }
+
+    status.textContent = `${data.planes.length} aircraft · updated `
+      + new Date().toLocaleTimeString();
+  } catch (e) {
+    status.textContent = 'Fetch failed: ' + e.message;
+  }
+}
+
+refresh();
+setInterval(refresh, 15000); // live: refresh every 15s
+</script>
+</body>
+</html>

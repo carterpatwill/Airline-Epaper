@@ -1,0 +1,29 @@
+# ---- Secrets (never commit) ------------------------------------------------
+# Real WiFi + OpenSky credentials live here. Copy config.example.h -> config.h
+# and fill in your own. See config.example.h for the template.
+firmware/src/core/config.h
+
+# ---- PlatformIO / build artifacts ------------------------------------------
+.pio/
+*.elf
+*.bin.map
+
+# ---- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ---- Large / regenerable data ----------------------------------------------
+# Source metadata dump (~112MB, exceeds GitHub's 100MB limit). Re-download from
+# OpenSky; tools/build_ac_db.py turns it into firmware/data/acdb.bin.
+aircraft-database-complete-2025-08.csv
+# Generated binary aircraft DB (~14MB). Rebuild via tools/build_ac_db.py.
+firmware/data/acdb.bin
+
+# ---- OS / editor cruft -----------------------------------------------------
+.DS_Store
+**/.DS_Store
+*.swp
+.idea/
+.vscode/

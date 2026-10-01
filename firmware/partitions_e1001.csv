@@ -1,0 +1,7 @@
+# reTerminal E1001 — 32MB flash. Single app (no OTA) + LittleFS for acdb.bin.
+# LittleFS sized to 16MB (DB is ~14MB): smaller erase = reliable uploadfs over
+# the CH34x. Remaining flash above 0x1410000 is intentionally left unused.
+# Name,     Type, SubType,  Offset,    Size
+nvs,        data, nvs,      0x9000,    0x5000
+factory,    app,  factory,  0x10000,   0x400000
+littlefs,   data, littlefs, 0x410000,  0x1000000
