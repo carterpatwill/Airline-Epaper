@@ -27,6 +27,8 @@ OUT_H = os.path.join(ROOT, "firmware", "src", "generated", "gen_airline_logos.h"
 LOGOS = {
     "ACA": "AirCanada.png",
     "AFR": "AirFrance.png",
+    "THT": "Air-Tahiti-Nui-Logo.png",
+    "LOT": "LOT_Polish_Airlines-Logo.wine.png",
     "CAO": "AirchinaCargo.png",
     "AAY": "Alleigant.png",
     "ASA": "Alaska.png",
@@ -38,6 +40,7 @@ LOGOS = {
     "BAW": "Brittish.png",
     "CPA": "Cathy.png",
     "CAL": "ChinaAirlines.png",
+    "CFG": "Condor.png",
     "DAL": "Delta.png",
     "UAE": "Emarates.png",
     "EDV": "Endavours.png",

@@ -26,17 +26,41 @@ IMG_DIR = os.path.join(ROOT, "_Planes")
 PREVIEW_DIR = os.path.join(IMG_DIR, "preview_branded")
 OUT_H = os.path.join(ROOT, "firmware", "src", "generated", "gen_branded_art.h")
 
-# ICAO callsign prefix -> branded side-view render. All of these are narrow-body
-# (737/A320), which is what these carriers fly on their mainline callsign.
+# ICAO callsign prefix -> branded side-view render. Keyed by the 3-letter ICAO
+# prefix the firmware derives from the live callsign (e.g. ASA -> Alaska).
 BRANDED = {
+    # US mainline narrow-body (737/A320)
     "AAL": "AmericanNarrowBodyClassic.png", # American
-    "ASA": "AlaskanClassicNarrow.png",     # Alaska
-    "DAL": "DeltaClassicNarrow.png",       # Delta
-    "FFT": "FreontierClassicNarrow.png",   # Frontier
-    "HAL": "HawwaiinClassicNarrow.png",    # Hawaiian
-    "JBU": "JetBlueClassicNarrow.png",     # JetBlue
-    "SWA": "SWClassicNarrow.png",          # Southwest
-    "UAL": "UnitedClassicNarrow.png",      # United
+    "ASA": "AlaskanClassicNarrow.png",      # Alaska
+    "DAL": "DeltaClassicNarrow.png",        # Delta
+    "FFT": "FreontierClassicNarrow.png",    # Frontier
+    "HAL": "HawwaiinClassicNarrow.png",     # Hawaiian
+    "JBU": "JetBlueClassicNarrow.png",      # JetBlue
+    "SWA": "SWClassicNarrow.png",           # Southwest
+    "UAL": "UnitedClassicNarrow.png",       # United
+    "AAY": "AlligeantClassic.png",          # Allegiant
+    "MXY": "BreezeClassic.png",             # Breeze (callsign MOXY)
+    "SCX": "SunCountryClassic.png",         # Sun Country
+    "VOI": "VolarisClassic.png",            # Volaris
+    "SKW": "SkywestReginalJet.png",         # SkyWest (regional jet)
+    # Cargo
+    "FDX": "FedExClassic.png",              # FedEx
+    "UPS": "UPSClassic.png",                # UPS
+    # International / wide-body
+    "ACA": "AirCanadaClassic.png",          # Air Canada
+    "THT": "AirTahitiNuiClassic.png",       # Air Tahiti Nui
+    "LOT": "LotClassic.png",                # LOT Polish Airlines
+    "ANA": "AnaJapan.png",                  # All Nippon Airways (ANA)
+    "AAR": "AsainaAirlines.png",            # Asiana
+    "CPA": "CathayPacific.png",             # Cathay Pacific
+    "CAL": "ChinaAirlines.png",             # China Airlines (callsign DYNASTY)
+    "CFG": "CondorAirplane.png",            # Condor
+    "UAE": "EmaritesTwinAsile.png",         # Emirates
+    "EVA": "EvaAir.png",                    # EVA Air
+    "JAL": "JapanAirlines.png",             # Japan Airlines
+    "KAL": "KoreanAir.png",                 # Korean Air
+    "PAL": "Philipines.png",                # Philippine Airlines
+    "SIA": "SignaporeDoubleDeck.png",       # Singapore Airlines
 }
 
 BG_THRESH = 244        # L >= this in the source is treated as background (white)
@@ -46,9 +70,16 @@ def process(path, box_w, box_h, gamma):
     """Source render -> (w, h, ink bool array) fitted inside the box."""
     g = np.asarray(Image.open(path).convert("L"), dtype=np.uint8)
     bg = g >= BG_THRESH
+    ink = ~bg
 
-    # Crop to the plane (everything that isn't background).
-    ys, xs = np.where(~bg)
+    # Crop to the plane. Use a density-based bbox, not raw min/max: a single
+    # stray speck far from the fuselage (e.g. a lone dark pixel near the image
+    # edge) would otherwise blow up the box and shrink the plane to fit. Keep
+    # only rows/cols carrying a meaningful fraction of the peak ink count.
+    row_ink, col_ink = ink.sum(axis=1), ink.sum(axis=0)
+    rt, ct = row_ink.max() * 0.01, col_ink.max() * 0.01
+    ys = np.where(row_ink > rt)[0]
+    xs = np.where(col_ink > ct)[0]
     y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
     crop = g[y0:y1, x0:x1].astype(np.float32)
     cbg = bg[y0:y1, x0:x1]

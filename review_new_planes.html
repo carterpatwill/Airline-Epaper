@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New branded planes — review</title>
+<style>
+  :root { --ink:#111; --panel:#fff; --bg:#2b2b2b; --muted:#888; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:#eee; display:flex; flex-direction:column;
+         min-height:100vh; }
+  header { padding:14px 20px; border-bottom:1px solid #444; display:flex;
+           align-items:baseline; gap:14px; }
+  header h1 { font-size:16px; margin:0; font-weight:600; }
+  header .count { color:var(--muted); font-size:13px; }
+  main { flex:1; display:flex; align-items:center; justify-content:center;
+         padding:24px; }
+  .viewer { width:100%; max-width:860px; }
+  /* e-paper simulation: pure black ink on white, 800x480 feel */
+  .panel { background:var(--panel); border-radius:6px; padding:28px 32px;
+           box-shadow:0 10px 40px rgba(0,0,0,.5); }
+  .meta { display:flex; align-items:center; justify-content:space-between;
+          margin-bottom:18px; }
+  .name { color:var(--ink); font-size:26px; font-weight:700; }
+  .icao { color:#555; font-size:13px; font-weight:600; letter-spacing:1px;
+          border:1px solid #bbb; border-radius:4px; padding:2px 8px; }
+  .logo { height:40px; }
+  .logo img { height:100%; image-rendering:pixelated; }
+  .nologo { color:#b00; font-size:12px; font-style:italic; }
+  .plane { text-align:center; background:#fff; padding:10px 0; }
+  .plane img { max-width:100%; image-rendering:pixelated; }
+  .nav { display:flex; align-items:center; justify-content:space-between;
+         margin-top:20px; gap:12px; }
+  button { background:#444; color:#eee; border:1px solid #666; border-radius:6px;
+           padding:10px 18px; font-size:14px; cursor:pointer; }
+  button:hover { background:#555; }
+  .pos { color:var(--muted); font-size:13px; }
+  /* filmstrip */
+  .strip { display:flex; gap:6px; overflow-x:auto; padding:12px 20px;
+           border-top:1px solid #444; background:#222; }
+  .thumb { flex:0 0 auto; width:96px; background:#fff; border-radius:4px;
+           padding:4px; cursor:pointer; border:2px solid transparent; }
+  .thumb.active { border-color:#4a9eff; }
+  .thumb img { width:100%; image-rendering:pixelated; display:block; }
+  .thumb .t { font-size:9px; color:#333; text-align:center; margin-top:2px;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  kbd { background:#333; border:1px solid #555; border-radius:3px; padding:1px 6px;
+        font-size:11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>New branded planes — review</h1>
+  <span class="count" id="count"></span>
+  <span class="count">· <kbd>←</kbd> <kbd>→</kbd> to step through</span>
+</header>
+
+<main>
+  <div class="viewer">
+    <div class="panel">
+      <div class="meta">
+        <div class="name" id="name"></div>
+        <div id="logoSlot"></div>
+      </div>
+      <div class="plane"><img id="plane" alt=""></div>
+      <div class="nav">
+        <button id="prev">◀ Prev</button>
+        <span class="pos" id="pos"></span>
+        <button id="next">Next ▶</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="strip" id="strip"></div>
+
+<script>
+// code, name, hasLogo
+const PLANES = [
+  ["ACA","Air Canada",        true ],
+  ["THT","Air Tahiti Nui",    false],
+  ["LOT","LOT Polish",        false],
+  ["AAY","Allegiant",         true ],
+  ["MXY","Breeze",            true ],
+  ["SCX","Sun Country",       true ],
+  ["VOI","Volaris",           true ],
+  ["SKW","SkyWest",           true ],
+  ["FDX","FedEx",             true ],
+  ["UPS","UPS",               true ],
+  ["ANA","ANA (All Nippon)",  true ],
+  ["AAR","Asiana",            true ],
+  ["CPA","Cathay Pacific",    true ],
+  ["CAL","China Airlines",    true ],
+  ["CFG","Condor",            true ],
+  ["UAE","Emirates",          true ],
+  ["EVA","EVA Air",           true ],
+  ["JAL","Japan Airlines",    true ],
+  ["KAL","Korean Air",        true ],
+  ["PAL","Philippine",        true ],
+  ["SIA","Singapore",         true ],
+];
+const planeSrc = c => `_Planes/preview_branded/branded_${c}.png`;
+const logoSrc  = c => `_AirplaneLogos/preview/logo_${c}.png`;
+
+let i = 0;
+const $ = id => document.getElementById(id);
+$("count").textContent = `${PLANES.length} airlines`;
+
+function render() {
+  const [code, name, hasLogo] = PLANES[i];
+  $("name").textContent = name;
+  $("plane").src = planeSrc(code);
+  $("pos").textContent = `${i+1} / ${PLANES.length}`;
+  $("logoSlot").innerHTML = hasLogo
+    ? `<span class="icao">${code}</span> <span class="logo"><img src="${logoSrc(code)}"></span>`
+    : `<span class="icao">${code}</span> <span class="nologo">no logo wired</span>`;
+  [...document.querySelectorAll(".thumb")].forEach((t,n)=>
+    t.classList.toggle("active", n===i));
+  const act = document.querySelector(".thumb.active");
+  if (act) act.scrollIntoView({inline:"center", block:"nearest", behavior:"smooth"});
+}
+function go(n){ i = (n + PLANES.length) % PLANES.length; render(); }
+
+$("prev").onclick = () => go(i-1);
+$("next").onclick = () => go(i+1);
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft")  go(i-1);
+  if (e.key === "ArrowRight") go(i+1);
+});
+
+// build filmstrip
+const strip = $("strip");
+PLANES.forEach(([code,name],n) => {
+  const d = document.createElement("div");
+  d.className = "thumb";
+  d.innerHTML = `<img src="${planeSrc(code)}"><div class="t">${code}</div>`;
+  d.onclick = () => go(n);
+  strip.appendChild(d);
+});
+
+render();
+</script>
+</body>
+</html>

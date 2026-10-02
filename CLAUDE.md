@@ -136,15 +136,17 @@ Split by concern (each folder is on the include path via `platformio.ini`
   design (owner field dropped to stay flash-only, no SD).
 - **Destinations**: aircraft do NOT broadcast destination over ADS-B. adsbdb's
   callsign->route lookup is a stale schedule DB and is often wrong (verified:
-  a SkyWest touching down at SNA showed adsbdb "MSP->MSN"). So for a plane that
+  a SkyWest touching down at SFO showed adsbdb "MSP->MSN"). So for a plane that
   is low (<10000ft) + descending near a known airport, we OVERRIDE the dest with
   the nearest airport (geometric ground truth = it's landing there) and mark it
   "(landing)". adsbdb is only trusted for cruising planes / origin. Airport
-  table = MAJOR commercial only (SNA/LAX/LGB/ONT/BUR) in firmware/src/geo/geo.cpp.
-  GA fields (Fullerton/Chino) deliberately excluded — a jet on SNA final passing
-  over the Fullerton GA strip is landing at SNA, not there. Inference also requires
-  the plane's track to point AT the airport (arrivalAirport(), 70deg tolerance) so
-  transiting/passing planes aren't falsely tagged. Add major airports as needed.
+  table = MAJOR commercial only (SFO/OAK/SJC) in firmware/src/geo/geo.cpp — the
+  device lives on the SF Peninsula (HOME_LAT/LON in config.h ~Belmont/San Carlos).
+  GA fields (San Carlos/Palo Alto) deliberately excluded — a jet on SFO final
+  passing over the San Carlos GA strip is landing at SFO, not there. Inference
+  also requires the plane's track to point AT the airport (arrivalAirport(), 70deg
+  tolerance) so transiting/passing planes aren't falsely tagged. Add major
+  airports as needed (and update the table if the device moves regions).
   No free keyless API gives real live destinations; don't go hunting for one.
 
 ## Data sources
@@ -175,7 +177,7 @@ one request serves many planes.
   returns every flight in the box with `lat,lng,alt,speed,dir,hex,flight_iata,
   dep_iata,arr_iata,aircraft_icao` — i.e. position + origin + destination + type
   for ~20–50 nearby planes at once. (FlightAware `/flights/search -latlong` also
-  does bbox but bills per 15-record page → metered/expensive in a busy SoCal box.
+  does bbox but bills per 15-record page → metered/expensive in a busy Bay Area box.
   Wrong tool. airlabs is the one. Free tier ~1,000 req/mo — CONFIRM exact quota +
   which fields are gated when signing up; needs a free API key, no card.)
 - **Why it stays free — sweep on cache MISS, not per wake.** Requests scale with

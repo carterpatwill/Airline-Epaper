@@ -2,14 +2,12 @@
 #include <math.h>
 
 // Major commercial airports only -- airliners land here. (Small GA fields like
-// Fullerton/Chino are deliberately excluded: a jet on SNA approach passing over
-// Fullerton is landing at SNA, not the GA strip below it.)
+// San Carlos/Palo Alto are deliberately excluded: a jet on SFO approach passing
+// over San Carlos is landing at SFO, not the GA strip below it.)
 static const Airport AIRPORTS[] = {
-  {"SNA", "Santa Ana",    33.6757, -117.8682},
-  {"LAX", "Los Angeles",  33.9416, -118.4085},
-  {"LGB", "Long Beach",   33.8177, -118.1516},
-  {"ONT", "Ontario",      34.0560, -117.6012},
-  {"BUR", "Burbank",      34.2007, -118.3587},
+  {"SFO", "San Francisco", 37.6213, -122.3790},
+  {"OAK", "Oakland",       37.7126, -122.2197},
+  {"SJC", "San Jose",      37.3639, -121.9289},
 };
 
 double haversineKm(double la1, double lo1, double la2, double lo2) {
