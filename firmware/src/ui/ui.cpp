@@ -303,6 +303,34 @@ static void latLonToPixel(double lat, double lon, int& px, int& py) {
   py = lroundf((lat - MAP_LAT_TOP)  / (MAP_LAT_BOT  - MAP_LAT_TOP ) * 480.0);
 }
 
+// Airports to plot on the map. DISPLAY-ONLY -- intentionally NOT the arrival-
+// inference AIRPORTS[] table in geo.cpp (that one is major-commercial only so a
+// jet on SFO final isn't mis-tagged as landing at a GA strip below it).
+struct MapAirport { const char* code; double lat; double lon; };
+static const MapAirport MAP_AIRPORTS[] = {
+  {"SFO", 37.615973, -122.380412},  // San Francisco Intl
+  {"HAF", 37.513977, -122.494910},  // Half Moon Bay
+  {"SQL", 37.514777, -122.251054},  // San Carlos
+  {"HWD", 37.662801, -122.122746},  // Hayward Executive
+  {"PAO", 37.454761, -122.110898},  // Palo Alto
+};
+
+// A filled dot (white halo + black core) with the airport code labelled beside
+// it. Label flips left near the right edge so it never runs off the panel.
+static void airportMarker(const MapAirport& a) {
+  int px, py;
+  latLonToPixel(a.lat, a.lon, px, py);
+  if (px < 4 || px > 796 || py < 4 || py > 476) return;   // off map, skip
+  display.fillCircle(px, py, 5, GxEPD_WHITE);             // halo
+  display.fillCircle(px, py, 3, GxEPD_BLACK);             // core
+  int lx = px + 9;
+  { int16_t bx, by; uint16_t bw, bh;
+    display.setFont(&FreeSansBold9pt7b);
+    display.getTextBounds(a.code, 0, 0, &bx, &by, &bw, &bh);
+    if (lx + (int)bw > 794) lx = px - 9 - (int)bw; }
+  chip(lx, py + 5, &FreeSansBold9pt7b, a.code);
+}
+
 void drawMapScreen(const Plane& p) {
   const int cx = 400;                // used only for the north indicator
 
@@ -314,6 +342,9 @@ void drawMapScreen(const Plane& p) {
 
     // Area map backdrop (1 = black ink; white pixels left as paper).
     display.drawBitmap(0, 0, MAP_BG, MAP_BG_W, MAP_BG_H, GxEPD_BLACK);
+
+    // Airports (drawn before the plane so the aircraft marker sits on top).
+    for (const MapAirport& a : MAP_AIRPORTS) airportMarker(a);
 
     // North indicator (top center).
     chip(cx - 10, 26, &FreeSansBold9pt7b, "N");
