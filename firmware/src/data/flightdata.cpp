@@ -101,6 +101,17 @@ const BrandedArt* brandedFor(const char* pfx) {
   return nullptr;
 }
 
+// A commercial airliner is identifiable by a known 3-letter airline ICAO prefix
+// in its callsign (UAL, SWA, ...). GA/private planes broadcast a tail number
+// (N12345) with no airline prefix, so airlineFor() misses -> not commercial.
+static bool isCommercial(const String& callsign) {
+  String cs = callsign; cs.trim();
+  if (cs.length() < 3) return false;
+  if (!isAlpha(cs[0]) || !isAlpha(cs[1]) || !isAlpha(cs[2])) return false;
+  char pfx[4] = { (char)toupper(cs[0]), (char)toupper(cs[1]), (char)toupper(cs[2]), 0 };
+  return airlineFor(pfx) != nullptr;
+}
+
 void callsignPrefix(const String& callsign, char pfx[4]) {
   pfx[0] = 0;
   String cs = callsign; cs.trim();
@@ -152,6 +163,11 @@ Plane fetchNearest() {
     double lon = s[5], lat = s[6];
     double d = haversineKm(HOME_LAT, HOME_LON, lat, lon);
     if (d >= bestDist) continue;
+#if COMMERCIAL_ONLY
+    // Only consider scheduled airliners; skip private/GA/military traffic.
+    String cs0 = String((const char*)(s[1] | "")); cs0.trim();
+    if (!isCommercial(cs0)) continue;
+#endif
     bestDist = d;
     best.valid = true;
     best.icao24 = String((const char*)(s[0] | ""));

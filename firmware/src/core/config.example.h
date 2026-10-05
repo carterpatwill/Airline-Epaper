@@ -26,6 +26,13 @@
 // this modest. 5 min is a good starting point.
 #define REFRESH_MINUTES  5
 
+// Commercial airlines only. When 1, ignore private/GA/military traffic and only
+// ever show scheduled airliners. Detection: the callsign must carry a known
+// 3-letter airline ICAO prefix (UAL, SWA, ...). GA planes broadcast their tail
+// number (N12345) as the callsign, which has no airline prefix, so they're
+// skipped. Set to 0 to show the single closest plane of any kind.
+#define COMMERCIAL_ONLY  1
+
 // POSIX timezone string for the header clock (fetched from NTP).
 // Default = US Pacific. Examples: US Eastern "EST5EDT,M3.2.0,M11.1.0".
 #define TZ_POSIX    "PST8PDT,M3.2.0,M11.1.0"
