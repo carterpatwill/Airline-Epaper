@@ -93,7 +93,7 @@ def carr(name, data):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default=os.path.join(ROOT, "Map", "SanFranGrey.png"))
+    ap.add_argument("--src", default=os.path.join(ROOT, "assets", "map", "SanFranGrey.png"))
     ap.add_argument("--lighten", type=float, default=0.4,
                     help="0..1 terrain-fill darkness kept (lower = lighter inside)")
     ap.add_argument("--contrast", type=float, default=1.9,

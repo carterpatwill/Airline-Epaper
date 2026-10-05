@@ -20,7 +20,7 @@ Run from the repo root:
 import csv, os, struct, sys, collections
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CSV  = os.path.join(ROOT, "aircraft-database-complete-2025-08.csv")
+CSV  = os.path.join(ROOT, "data", "aircraft-database-complete-2025-08.csv")
 BIN  = os.path.join(ROOT, "firmware", "data", "acdb.bin")
 HTYPES = os.path.join(ROOT, "firmware", "src", "generated", "gen_aircraft_types.h")
 HAIR   = os.path.join(ROOT, "firmware", "src", "generated", "gen_airlines.h")
@@ -28,7 +28,7 @@ HAIR   = os.path.join(ROOT, "firmware", "src", "generated", "gen_airlines.h")
 TC_LEN, REG_LEN, RECSIZE = 8, 12, 24
 
 # Pull the curated typecode -> base-model map + base list from the prototype.
-sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "prototype"))
 from base_models import ICAO_TO_BASE, BASE_IMAGE  # noqa: E402
 
 # Stable id per base model (index into a firmware silhouette table). 0 = Unknown.

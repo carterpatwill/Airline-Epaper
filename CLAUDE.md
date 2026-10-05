@@ -17,7 +17,7 @@ plane, and draws the UI natively to its own e-paper panel.
 - Displays natively-drawn graphics; there is no browser and no HTML on-device.
 - Ships with **SenseCraft** firmware; our custom Arduino firmware **replaces** it.
 - **Full spec, hardware overview, expansion pinout, and Mac flashing notes:
-  see [HARDWARE.md](HARDWARE.md).** The ePaper SPI pins are NOT documented in
+  see [HARDWARE.md](docs/HARDWARE.md).** The ePaper SPI pins are NOT documented in
   the wiki — pull them from the schematic PDF / Seeed Arduino example.
 
 ## Architecture (all on-device firmware)
@@ -64,14 +64,16 @@ Split by concern (each folder is on the include path via `platformio.ini`
   Do NOT hand-edit.
 
 ## Role of the existing files (reference/prototype only)
-- `dashboard.html` — **the visual spec** for the on-device layout (800×480,
-  black-on-white, 4-gray-safe, silhouette + stats + "look" footer). NOT deployed;
-  it exists so we can preview the design in a browser. Firmware must reproduce
-  this layout with native drawing.
-- `tracker.py` / `base_models.py` / `plane-images/` — the **Python prototype** of
+- `preview/dashboard.html` — **the visual spec** for the on-device layout
+  (800×480, black-on-white, 4-gray-safe, silhouette + stats + "look" footer). NOT
+  deployed; it exists so we can preview the design in a browser. Firmware must
+  reproduce this layout with native drawing. (Other static previews live in
+  `preview/` too; `prototype/index.html` is the live UI served by `tracker.py`.)
+- `prototype/tracker.py` / `prototype/base_models.py` — the **Python prototype** of
   the exact API calls, closest-plane logic, and type→silhouette mapping the
-  firmware must reimplement. `plane-images/*.png` are the source art to convert
-  into embedded monochrome/4-gray bitmaps.
+  firmware must reimplement. Source art lives in `assets/` (`assets/planes/` 3D
+  renders, `assets/logos/` airline wordmarks, `assets/map/`, `assets/markers/`);
+  `tools/build_*.py` convert it into embedded monochrome/4-gray bitmaps.
 
 ## Design constraints (keep the panel happy)
 - Monochrome-safe: black/white + at most the 4 gray levels; never rely on color
@@ -88,7 +90,7 @@ Split by concern (each folder is on the include path via `platformio.ini`
 
 ## Open TODOs (firmware)
 - [x] Stack decided: Arduino-ESP32 + GxEPD2/Adafruit_GFX.
-- [x] Display config confirmed → see [HARDWARE.md](HARDWARE.md): Seeed_GxEPD2
+- [x] Display config confirmed → see [HARDWARE.md](docs/HARDWARE.md): Seeed_GxEPD2
       fork, `GxEPD2_750_GDEY075T7` (UC8179), HSPI pins SCK7/MOSI9/CS10/DC11/
       RES12/BUSY13, board XIAO_ESP32S3 + OPI PSRAM.
 - [x] Scaffold PlatformIO firmware (`firmware/`); builds clean.
@@ -105,7 +107,7 @@ Split by concern (each folder is on the include path via `platformio.ini`
       Creds in config.h. Type/model/airline/registration now on the card.
 - [x] Offline aircraft DB (icao24 -> type/model/reg) in flash via LittleFS —
       NO SD card. Replaces adsbdb TYPE lookup (kept only as fallback on miss).
-- [ ] Convert `plane-images/` PNGs to embedded 4-gray bitmaps (silhouette still
+- [ ] Convert `assets/planes/` PNGs to embedded 4-gray bitmaps (silhouette still
       a placeholder box; Plane.baseModel already selects the right art id).
 - [ ] adsbdb ROUTE caching in NVS across wakes. See "Bulk-fetch nearby
       routes (free-tier strategy)" below. (Type caching no longer needed —

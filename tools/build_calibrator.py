@@ -19,7 +19,7 @@ from PIL import Image
 from build_map import cover_resize, W, H   # same crop as the device bitmap
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC  = os.path.join(ROOT, "Map", "SanFranGrey.png")
+SRC  = os.path.join(ROOT, "assets", "map", "SanFranGrey.png")
 AIRPORTS_MD = os.path.join(ROOT, "Airports.md")
 OUT  = os.path.join(ROOT, "map_calibrate.html")
 

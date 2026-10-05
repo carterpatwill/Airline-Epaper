@@ -18,6 +18,12 @@
 // Onboard green LED (active-low: LOW = on). Used as instant press feedback.
 #define LED_GREEN     6
 
+// Battery sense (reTerminal E1001): a 1:2 divider on GPIO1, gated by a P-FET on
+// GPIO21. Drive enable HIGH, settle, read analogReadMilliVolts(), drive LOW.
+// Actual pack voltage = measured * 2. Source: Seeed Arduino peripherals wiki.
+#define BAT_ADC_PIN     1
+#define BAT_ENABLE_PIN  21
+
 // DEBUG: stay awake and refresh on a short interval (no deep sleep, button not
 // needed) so we get immediate, repeated feedback on-screen. Set 0 for the real
 // battery-saving deep-sleep behaviour.

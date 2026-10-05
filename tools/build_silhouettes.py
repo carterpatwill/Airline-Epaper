@@ -37,7 +37,7 @@ IMG_DIR = os.path.join(ROOT, "plane-images")
 PREVIEW_DIR = os.path.join(IMG_DIR, "preview")
 OUT_H = os.path.join(ROOT, "firmware", "src", "generated", "gen_silhouettes.h")
 
-sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "prototype"))
 from base_models import BASE_IMAGE  # base name -> filename  # noqa: E402
 
 # base id 1..14 in the SAME order the firmware enum uses (index+1).

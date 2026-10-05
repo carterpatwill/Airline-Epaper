@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <time.h>
 #include "config.h"
+#include "board.h"
 
 // ---- Fetch diagnostics ------------------------------------------------------
 int    g_httpCode  = 0;
@@ -27,6 +28,21 @@ bool wifiConnect(uint32_t timeoutMs) {
   uint32_t start = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - start < timeoutMs) delay(200);
   return WiFi.status() == WL_CONNECTED;
+}
+
+int batteryPercent() {
+  pinMode(BAT_ENABLE_PIN, OUTPUT);
+  analogReadResolution(12);
+  analogSetPinAttenuation(BAT_ADC_PIN, ADC_11db);   // full ~0..3.1V range
+  digitalWrite(BAT_ENABLE_PIN, HIGH);               // gate the divider on
+  delay(10);                                        // let it settle
+  uint32_t sum = 0; const int N = 8;
+  for (int i = 0; i < N; i++) sum += analogReadMilliVolts(BAT_ADC_PIN);
+  digitalWrite(BAT_ENABLE_PIN, LOW);                // and back off (save power)
+  float volts = (sum / (float)N) / 1000.0f * 2.0f;  // undo the 1:2 divider
+  // LiPo: ~4.2V full, ~3.3V empty. Linear is good enough for a 4-pip icon.
+  int pct = (int)lroundf((volts - 3.3f) / (4.2f - 3.3f) * 100.0f);
+  return constrain(pct, 0, 100);
 }
 
 int httpGetJson(const String& url, JsonDocument& doc, JsonDocument* filter,

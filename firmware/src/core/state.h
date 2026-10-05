@@ -6,3 +6,6 @@
 extern Plane   g_plane;     // last good plane (valid=false until first fetch)
 extern Weather g_weather;
 extern Screen  g_screen;
+
+extern int g_battPct;       // battery charge 0..100, or -1 if not yet read
+extern int g_wifiRssi;      // WiFi signal dBm (negative); 0 = not connected

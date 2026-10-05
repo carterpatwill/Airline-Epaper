@@ -12,6 +12,7 @@
 #include "flightdata.h"           // callsignPrefix, logoFor
 #include "gen_plane_art.h"        // PLANE_ART[] / PLANE_ART_NAME[] / N_PLANE_ART
 #include "gen_map.h"              // MAP_BG : 800x480 1bpp area map (MAP screen)
+#include "gen_marker.h"           // MARKER_BODY/MARKER_HALO : aircraft marker
 
 // ---- Text helpers -----------------------------------------------------------
 static void text(int x, int y, const GFXfont* f, const String& s) {
@@ -30,12 +31,55 @@ static void textCenter(int cx, int y, const GFXfont* f, const String& s) {
   display.setCursor(cx - bw / 2, y); display.print(s);
 }
 
+// ---- Status glyphs: WiFi signal + battery ----------------------------------
+// A thick 90-deg arc opening upward (for the WiFi fan), centered on (cx,cy).
+static void drawArc(int cx, int cy, int r, int thick) {
+  for (int t = 0; t < thick; t++)
+    for (int d = 225; d <= 315; d++) {              // top quadrant, up-facing
+      float a = d * 0.01745329f;
+      display.drawPixel(cx + lroundf((r + t) * cosf(a)),
+                        cy + lroundf((r + t) * sinf(a)), GxEPD_BLACK);
+    }
+}
+// Classic WiFi fan: a dot plus 1-3 arcs by signal strength. The icon spans
+// cx +/-16 horizontally and rises 16px above cy (the dot). rssi 0 = offline.
+static void drawWifiSignal(int cx, int cy, int rssi) {
+  int bars;
+  if      (rssi == 0)   bars = 0;     // not connected
+  else if (rssi >= -60) bars = 3;
+  else if (rssi >= -70) bars = 2;
+  else                  bars = 1;     // connected but weak
+  display.fillCircle(cx, cy, 2, GxEPD_BLACK);       // origin dot
+  const int radii[3] = {6, 11, 16};
+  for (int i = 0; i < 3; i++) if (i < bars) drawArc(cx, cy, radii[i], 3);
+  if (bars == 0) {                                  // offline: slash through it
+    display.drawLine(cx - 8, cy - 15, cx + 8, cy + 1, GxEPD_BLACK);
+    display.drawLine(cx - 8, cy - 16, cx + 8, cy,     GxEPD_BLACK);
+  }
+}
+// Battery outline with a fill proportional to `pct` (-1 = unknown -> "?").
+static void drawBatteryGlyph(int x, int yBottom, int pct) {
+  const int w = 30, h = 16, yTop = yBottom - h;
+  display.drawRect(x, yTop, w, h, GxEPD_BLACK);
+  display.fillRect(x + w, yTop + 4, 3, h - 8, GxEPD_BLACK);   // + terminal nub
+  if (pct >= 0) {
+    int fw = (w - 4) * pct / 100;
+    if (fw > 0) display.fillRect(x + 2, yTop + 2, fw, h - 4, GxEPD_BLACK);
+  } else {
+    display.setFont(&FreeSansBold9pt7b);
+    display.setTextColor(GxEPD_BLACK);
+    display.setCursor(x + 10, yBottom - 2); display.print("?");
+  }
+}
+
 static String clockStr() {
   time_t now = time(nullptr);
   if (now < 100000) return "--:--";       // NTP not synced
   struct tm tm; localtime_r(&now, &tm);
-  char b[8]; strftime(b, sizeof(b), "%H:%M", &tm);
-  return String(b);
+  char b[12]; strftime(b, sizeof(b), "%I:%M %p", &tm);   // 12-hour + AM/PM
+  String s = b;
+  if (s.startsWith("0")) s = s.substring(1);             // "02:47 PM" -> "2:47 PM"
+  return s;
 }
 
 // Format an integer with thousands separators, e.g. 32000 -> "32,000".
@@ -146,24 +190,44 @@ void drawCard(const Plane& p) {
     display.fillScreen(GxEPD_WHITE);
     display.setTextColor(GxEPD_BLACK);
 
-    // Header: big airline logo up top, flight number below it (left); clock +
-    // tail on the right; rule under. Model is omitted here (shown under plane).
+    // Status cluster in the top-RIGHT corner: WiFi signal + battery + percent,
+    // right-aligned at x=778. Built right-to-left so it always hugs the edge.
+    {
+      int pctW = 0;
+      char pb[8] = {0};
+      if (g_battPct >= 0) {
+        snprintf(pb, sizeof(pb), "%d%%", g_battPct);
+        int16_t bx, by; uint16_t bw, bh;
+        display.setFont(&FreeSansBold9pt7b);
+        display.getTextBounds(pb, 0, 0, &bx, &by, &bw, &bh);
+        pctW = bw;
+        text(778 - pctW, 23, &FreeSansBold9pt7b, pb);
+      }
+      int batRight = 778 - pctW - (pctW ? 8 : 0);
+      int batX = batRight - 33;                        // body(30) + nub(3)
+      drawBatteryGlyph(batX, 24, g_battPct);
+      drawWifiSignal(batX - 6 - 16, 24, g_wifiRssi);   // fan sits left of battery
+    }
+
+    // Header: airline logo top-left (vertically centered in the full header),
+    // flight number beside it; clock + tail on the right under the status row.
     char pfx[4]; callsignPrefix(p.callsign, pfx);
     const AirlineLogo* logo = pfx[0] ? logoFor(pfx) : nullptr;
     if (logo) {
-      // Logo fills the left corner (vertically centered); flight code to its
-      // right, smaller.
       int ly = (78 - logo->h) / 2;
       display.drawBitmap(18, ly, logo->bits, logo->w, logo->h, GxEPD_BLACK);
-      text(18 + logo->w + 16, 47, &FreeSansBold12pt7b, p.callsign);
+      int tx = 18 + logo->w + 16;
+      text(tx, 42, &FreeSansBold12pt7b, p.callsign);        // flight code
+      if (p.registration.length())
+        text(tx, 66, &FreeSans9pt7b, p.registration);       // tail # under it
     } else {
-      // No logo for this airline: fall back to a big callsign + airline name.
+      // No logo for this airline: fall back to a big callsign + airline/tail.
       text(22, 42, &FreeSansBold24pt7b, p.callsign);
       text(24, 68, &FreeSans9pt7b, p.airline.length() ? p.airline : String("aircraft"));
+      if (p.registration.length())
+        textRight(400, 68, &FreeSans9pt7b, p.registration);
     }
-    textRight(778, 40, &FreeSansBold12pt7b, clockStr());
-    if (p.registration.length())
-      textRight(778, 66, &FreeSans9pt7b, p.registration);
+    textRight(778, 50, &FreeSansBold12pt7b, clockStr());
     display.fillRect(0, 78, 800, 3, GxEPD_BLACK);
 
     // Stats column pushed to the right edge so the plane gets more room.
@@ -275,18 +339,31 @@ static void chipInv(int x, int yb, const GFXfont* f, const String& s) {
   display.setCursor(x, yb); display.print(s);
   display.setTextColor(GxEPD_BLACK);
 }
-// A little aircraft marker: filled triangle pointing along `hdg` (0 = north/up),
-// with a white halo so it reads over the busy map.
+// A top-down aircraft marker (plane-marker.png) centered at px,py and rotated to
+// `hdg` (0 = nose north/up), with a white halo so it reads over the busy map.
+// The upright 1bpp mask is sampled per output pixel via an inverse rotation --
+// GxEPD2/Adafruit_GFX has no rotated-bitmap blit, and runtime sampling keeps the
+// angle smooth with only ~1KB of flash for the single mask.
+static inline bool markerBit(const uint8_t* bmp, int x, int y) {
+  if (x < 0 || y < 0 || x >= MARKER_W || y >= MARKER_H) return false;
+  int rb = (MARKER_W + 7) >> 3;
+  return pgm_read_byte(&bmp[y * rb + (x >> 3)]) & (0x80 >> (x & 7));
+}
 static void planeMarker(int px, int py, int hdg) {
   float a = hdg * 0.0174532925f, s = sinf(a), c = cosf(a);
-  auto tri = [&](float L, float Wd, uint16_t col) {
-    int nx  = px + s * L,        ny  = py - c * L;               // nose
-    int blx = px - s * 0.6f * L - c * Wd, bly = py + c * 0.6f * L - s * Wd;
-    int brx = px - s * 0.6f * L + c * Wd, bry = py + c * 0.6f * L + s * Wd;
-    display.fillTriangle(nx, ny, blx, bly, brx, bry, col);
-  };
-  tri(14, 10, GxEPD_WHITE);   // halo
-  tri(11, 7,  GxEPD_BLACK);   // body
+  const int cx = MARKER_W / 2, cy = MARKER_H / 2;
+  for (int oy = 0; oy < MARKER_H; oy++) {
+    for (int ox = 0; ox < MARKER_W; ox++) {
+      float dx = ox - cx, dy = oy - cy;
+      int sx = lroundf(cx + c * dx + s * dy);      // inverse-rotate to source
+      int sy = lroundf(cy - s * dx + c * dy);
+      uint16_t col;
+      if      (markerBit(MARKER_BODY, sx, sy)) col = GxEPD_BLACK;
+      else if (markerBit(MARKER_HALO, sx, sy)) col = GxEPD_WHITE;
+      else continue;                               // transparent
+      display.drawPixel(px + (int)dx, py + (int)dy, col);
+    }
+  }
 }
 
 // --- Map calibration for SanFranGrey.png (800x480) ---
@@ -369,8 +446,27 @@ void drawMapScreen(const Plane& p) {
       if (tagx + (int)bw > 792) tagx = px - 16 - (int)bw; }
     chipInv(tagx, py + 5, &FreeSansBold9pt7b, tag);
 
-    // Header chips: callsign (left) + clock (right), over the map.
-    chip(16, 34, &FreeSansBold12pt7b, tag);
+    // Header: airline logo (left) if we have one for this callsign, else the
+    // callsign text chip; clock (right). All over a white chip so it reads on
+    // the busy map.
+    { char pfx[4]; callsignPrefix(p.callsign, pfx);
+      const AirlineLogo* logo = pfx[0] ? logoFor(pfx) : nullptr;
+      int routeY;                                    // baseline for the route line
+      if (logo) {
+        int lx = 16, ly = 14;
+        display.fillRect(lx - 4, ly - 4, logo->w + 8, logo->h + 8, GxEPD_WHITE);
+        display.drawBitmap(lx, ly, logo->bits, logo->w, logo->h, GxEPD_BLACK);
+        routeY = ly + logo->h + 34;
+      } else {
+        chip(16, 34, &FreeSansBold12pt7b, tag);
+        routeY = 58;
+      }
+      // Route under the logo/callsign:  ORIG > DEST.
+      String orig = p.orig.length() ? p.orig : String("?");
+      String dest = p.dest.length() ? p.dest : String("?");
+      String route = orig + " > " + dest;
+      chip(16, routeY, &FreeSansBold12pt7b, route);
+    }
     { int16_t bx, by; uint16_t bw, bh;
       String t = clockStr();
       display.setFont(&FreeSansBold12pt7b);

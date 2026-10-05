@@ -43,12 +43,16 @@ static void deepSleepMinutes(uint32_t minutes) {
 static void runCycle() {
   g_httpCode = 0; g_numStates = -1; g_parseErr = "";
 
+  g_battPct = batteryPercent();   // works regardless of WiFi; shown on the card
+
   if (!wifiConnect()) {
     Serial.println("[wifi] failed");
+    g_wifiRssi = 0;               // 0 = disconnected -> empty signal glyph
     g_plane.valid = false;
     drawStatus("No WiFi", "check SSID/password in config.h (2.4GHz only)");
     return;
   }
+  g_wifiRssi = WiFi.RSSI();       // dBm, for the signal-bar glyph
   Serial.printf("[wifi] connected: %s\n", WiFi.localIP().toString().c_str());
 
   // NTP for the header clock (non-fatal if it doesn't sync in time).

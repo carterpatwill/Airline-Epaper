@@ -26,6 +26,10 @@ extern PsRamAllocator psAlloc;
 // Connect to the configured WiFi; true on success within timeoutMs.
 bool wifiConnect(uint32_t timeoutMs = 20000);
 
+// Read the battery and map pack voltage (3.3V empty .. 4.2V full) to 0..100%.
+// Self-contained: toggles the GPIO21 sense-enable P-FET around the read.
+int batteryPercent();
+
 // HTTPS GET whose body is buffered into PSRAM then parsed into `doc` (optionally
 // with an ArduinoJson filter). Returns the HTTP status code, or negative on a
 // transport/parse error. `bearer`, if set, is sent as an Authorization header.

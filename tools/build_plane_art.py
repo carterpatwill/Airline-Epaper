@@ -23,7 +23,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-IMG_DIR = os.path.join(ROOT, "_Planes")
+IMG_DIR = os.path.join(ROOT, "assets", "planes")
 PREVIEW_DIR = os.path.join(IMG_DIR, "preview")
 OUT_H = os.path.join(ROOT, "firmware", "src", "generated", "gen_plane_art.h")
 

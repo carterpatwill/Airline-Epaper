@@ -17,9 +17,12 @@ venv/
 # ---- Large / regenerable data ----------------------------------------------
 # Source metadata dump (~112MB, exceeds GitHub's 100MB limit). Re-download from
 # OpenSky; tools/build_ac_db.py turns it into firmware/data/acdb.bin.
-aircraft-database-complete-2025-08.csv
+data/aircraft-database-complete-2025-08.csv
 # Generated binary aircraft DB (~14MB). Rebuild via tools/build_ac_db.py.
 firmware/data/acdb.bin
+# Regenerable render previews (tools/prototype outputs, not inputs).
+card_preview.png
+map_preview.png
 
 # ---- OS / editor cruft -----------------------------------------------------
 .DS_Store

@@ -18,7 +18,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOGO_DIR = os.path.join(ROOT, "_AirplaneLogos")
+LOGO_DIR = os.path.join(ROOT, "assets", "logos")
 PREVIEW_DIR = os.path.join(LOGO_DIR, "preview")
 OUT_H = os.path.join(ROOT, "firmware", "src", "generated", "gen_airline_logos.h")
 
