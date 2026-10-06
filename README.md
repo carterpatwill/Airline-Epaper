@@ -9,6 +9,26 @@ direction + elevation angle).
 device connects to WiFi, calls the flight APIs itself, computes the closest
 plane, and draws the UI natively to its own e-paper panel.
 
+## Live on the device
+
+Real photos of the firmware running on the reTerminal E1001 panel.
+
+| Details card | Details card |
+| :---: | :---: |
+| ![SkyWest flight on approach to SFO](docs/images/skywest.jpeg) | ![Southwest flight on approach to SFO](docs/images/southwest.jpeg) |
+| SkyWest **SKW6277** — TUS → SFO (landing), Embraer 175, 2,600 ft descending, 2.5 mi away | Southwest **SWA2794** — MCO → SFO (landing), Boeing 737-800, 1,825 ft descending, 1.9 mi away |
+
+The card shows the airline + callsign + tail number, the route (with the
+destination overridden to geometric ground truth on approach), altitude with a
+climb/descent arrow, ground speed, a compass heading dial, the aircraft type +
+dithered silhouette, local weather, and the straight-line distance overhead.
+
+![Map screen tracking SKW6277 over the SF Peninsula](docs/images/map.jpeg)
+
+A second screen plots the plane on a dithered terrain map of the SF Peninsula
+with nearby airports (SFO/HWD/PAO/HAF/SQL), and a **"look ENE, 11° up"** hint for
+finding it in the sky.
+
 ## Hardware
 
 [Seeed Studio reTerminal E1001](https://www.seeedstudio.com/):
@@ -17,7 +37,7 @@ plane, and draws the UI natively to its own e-paper panel.
 - **ESP32-S3 + 8MB PSRAM**, 32MB flash, 2.4GHz WiFi
 - ~3-month battery, USB-C, microSD, temp/humidity sensors, buzzer
 
-Full spec, pin map, and Mac flashing notes are in **[HARDWARE.md](HARDWARE.md)**.
+Full spec, pin map, and Mac flashing notes are in **[docs/HARDWARE.md](docs/HARDWARE.md)**.
 
 ## How it works
 
